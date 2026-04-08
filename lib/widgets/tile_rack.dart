@@ -16,8 +16,6 @@ class TileRack extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingPlacement = ref.watch(pendingPlacementProvider);
     final selectedRackTile = ref.watch(selectedRackTileProvider);
-    final selectedForExchange = ref.watch(selectedForExchangeProvider);
-    final isExchangeMode = selectedForExchange.isNotEmpty;
     final placedLetters = pendingPlacement.map((c) => c.tile!.letter).toList();
     final visibleTiles = _getRemainingTiles(tiles, placedLetters);
     final slotCount = visibleTiles.length + pendingPlacement.length;
@@ -73,9 +71,6 @@ class TileRack extends ConsumerWidget {
                 runSpacing: preferredGap,
                 children: [
                   ...visibleTiles.map((tile) {
-                    final isSelectedForExchange = selectedForExchange.any(
-                      (t) => t.letter == tile.letter,
-                    );
                     final isSelectedForPlacement =
                         selectedRackTile != null &&
                         identical(selectedRackTile, tile);
@@ -84,9 +79,8 @@ class TileRack extends ConsumerWidget {
                       context,
                       ref,
                       tile,
-                      isSelectedForExchange || isSelectedForPlacement,
+                      isSelectedForPlacement,
                       isMyTurn,
-                      isExchangeMode,
                       useTapPlacementOnly,
                       tileSize,
                     );
@@ -110,7 +104,6 @@ class TileRack extends ConsumerWidget {
     TileModel tile,
     bool isSelected,
     bool isMyTurn,
-    bool isExchangeMode,
     bool useTapPlacementOnly,
     double tileSize,
   ) {
@@ -123,18 +116,9 @@ class TileRack extends ConsumerWidget {
       size: tileSize,
       isSelected: isSelected,
       onTap: () {
-        if (isExchangeMode) {
-          ref.read(selectedForExchangeProvider.notifier).update((s) {
-            final exists = s.any((t) => t.letter == tile.letter);
-            return exists
-                ? s.where((t) => t.letter != tile.letter).toList()
-                : [...s, tile];
-          });
-        } else {
-          ref.read(selectedRackTileProvider.notifier).update((selected) {
-            return identical(selected, tile) ? null : tile;
-          });
-        }
+        ref.read(selectedRackTileProvider.notifier).update((selected) {
+          return identical(selected, tile) ? null : tile;
+        });
       },
     );
 

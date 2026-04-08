@@ -227,55 +227,6 @@ class GameService {
     });
   }
 
-  Future<void> exchangeTiles({
-    required String gameId,
-    required GameModel currentGame,
-    required List<TileModel> tilesToExchange,
-  }) async {
-    final docRef = _games.doc(gameId);
-
-    await _db.runTransaction((txn) async {
-      final snapshot = await txn.get(docRef);
-      final data = snapshot.data() as Map<String, dynamic>;
-
-      final bag = List<String>.from(data[AppConstants.fieldTileBag] as List);
-      if (bag.length < tilesToExchange.length) {
-        throw Exception('Not enough tiles left in the bag');
-      }
-
-      final players = (data[AppConstants.fieldPlayers] as List)
-          .map((p) => PlayerModel.fromJson(p as Map<String, dynamic>))
-          .toList();
-
-      final turnIndex = data[AppConstants.fieldCurrentTurn] as int;
-      final player = players[turnIndex];
-
-      final updatedRack = List<TileModel>.from(player.rack);
-      for (final tile in tilesToExchange) {
-        updatedRack.removeWhere((t) => t.letter == tile.letter);
-      }
-
-      final newTiles = _drawTiles(bag, tilesToExchange.length);
-      updatedRack.addAll(newTiles.map(TileModel.fromLetter));
-
-      bag.addAll(tilesToExchange.map((t) => t.letter));
-      bag.shuffle();
-
-      players[turnIndex] = player.copyWith(rack: updatedRack);
-
-      final nextTurn = turnIndex == 0 ? 1 : 0;
-
-      txn.update(docRef, {
-        AppConstants.fieldTileBag: bag,
-        AppConstants.fieldPlayers: players.map((p) => p.toJson()).toList(),
-        AppConstants.fieldCurrentTurn: nextTurn,
-        'moveLog': FieldValue.arrayUnion([
-          'Player exchanged ${tilesToExchange.length} tile(s)',
-        ]),
-      });
-    });
-  }
-
   List<String> _drawTiles(List<String> bag, int count) {
     final drawn = <String>[];
     final actualCount = count.clamp(0, bag.length);

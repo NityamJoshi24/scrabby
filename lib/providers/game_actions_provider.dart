@@ -3,8 +3,6 @@ import 'package:scrabble/models/board_cell_model.dart';
 import 'package:scrabble/providers/auth_provider.dart';
 import 'package:scrabble/providers/game_provider.dart';
 
-import '../models/tile_model.dart';
-
 final gameActionsProvider = Provider<GameActions>((ref) => GameActions(ref));
 
 class GameActions {
@@ -80,41 +78,5 @@ class GameActions {
     await _ref
         .read(gameServiceProvider)
         .passTurn(gameId, game.currentTurnIndex);
-  }
-
-  Future<void> exchangeTiles() async {
-    final gameId = _ref.read(activeGameIdProvider);
-    final game = _ref.read(gameStreamProvider).valueOrNull;
-    final selected = _ref.read(selectedForExchangeProvider);
-    if (gameId == null || game == null || selected.isEmpty) return;
-
-    _ref.read(isSubmittingProvider.notifier).state = true;
-    try {
-      await _ref
-          .read(gameServiceProvider)
-          .exchangeTiles(
-            gameId: gameId,
-            currentGame: game,
-            tilesToExchange: selected,
-          );
-      _ref.read(selectedForExchangeProvider.notifier).state = [];
-    } finally {
-      _ref.read(isSubmittingProvider.notifier).state = false;
-    }
-  }
-
-  void toggleExchangeSelection(TileModel tile) {
-    final selected = _ref.read(selectedForExchangeProvider);
-    final exists = selected.any((t) => t.letter == tile.letter);
-    if (exists) {
-      _ref.read(selectedForExchangeProvider.notifier).state = selected
-          .where((t) => t.letter != tile.letter)
-          .toList();
-    } else {
-      _ref.read(selectedForExchangeProvider.notifier).state = [
-        ...selected,
-        tile,
-      ];
-    }
   }
 }

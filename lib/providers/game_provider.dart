@@ -34,8 +34,6 @@ final pendingPlacementProvider = StateProvider<List<BoardCellModel>>(
 
 final selectedRackTileProvider = StateProvider<TileModel?>((ref) => null);
 
-final selectedForExchangeProvider = StateProvider<List<TileModel>>((ref) => []);
-
 final isSubmittingProvider = StateProvider<bool>((ref) => false);
 
 final isMyTurnProvider = Provider<bool>((ref) {

@@ -14,11 +14,9 @@ class ActionBar extends ConsumerWidget {
     final isMyTurn = ref.watch(isMyTurnProvider);
     final isSubmitting = ref.watch(isSubmittingProvider);
     final pendingPlacements = ref.watch(pendingPlacementProvider);
-    final selectedForExchange = ref.watch(selectedForExchangeProvider);
     final validation = ref.watch(validationProvider);
     final actions = ref.read(gameActionsProvider);
 
-    final isExchangeMode = selectedForExchange.isNotEmpty;
     final hasPending = pendingPlacements.isNotEmpty;
 
     if (!isMyTurn) return const SizedBox.shrink();
@@ -35,10 +33,7 @@ class ActionBar extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
                   validation.error!,
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -58,15 +53,7 @@ class ActionBar extends ConsumerWidget {
           ],
 
           // Button row
-          isExchangeMode
-              ? _ExchangeModeBar(
-            selectedCount: selectedForExchange.length,
-            isSubmitting: isSubmitting,
-            onConfirm: () => actions.exchangeTiles(),
-            onCancel: () =>
-            ref.read(selectedForExchangeProvider.notifier).state = [],
-          )
-              : _NormalModeBar(
+          _NormalModeBar(
             hasPending: hasPending,
             pendingScore: validation.score,
             canPlay: validation.canPlay,
@@ -74,20 +61,11 @@ class ActionBar extends ConsumerWidget {
             onPlay: () => actions.commitMove(
               validation.score,
               '${ref.read(myPlayerProvider)?.displayName} played '
-                  '${validation.words.map((w) => w.word).join(', ')} '
-                  'for ${validation.score} pts',
+              '${validation.words.map((w) => w.word).join(', ')} '
+              'for ${validation.score} pts',
             ),
             onRecall: () => actions.recallAll(),
             onPass: () => _confirmPass(context, actions),
-            onExchangeMode: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'Tap tiles on your rack to select for exchange'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
           ),
         ],
       ),
@@ -129,7 +107,6 @@ class _NormalModeBar extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onRecall;
   final VoidCallback onPass;
-  final VoidCallback onExchangeMode;
 
   const _NormalModeBar({
     required this.hasPending,
@@ -139,7 +116,6 @@ class _NormalModeBar extends StatelessWidget {
     required this.onPlay,
     required this.onRecall,
     required this.onPass,
-    required this.onExchangeMode,
   });
 
   @override
@@ -173,57 +149,6 @@ class _NormalModeBar extends StatelessWidget {
           icon: Icons.skip_next,
           color: const Color(0xFFB9824F),
           onTap: !isSubmitting && !hasPending ? onPass : null,
-        ),
-        _ActionButton(
-          label: 'Exchange',
-          icon: Icons.swap_horiz,
-          color: const Color(0xFF7A5A3A),
-          onTap: !isSubmitting && !hasPending ? onExchangeMode : null,
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Exchange mode ────────────────────────────────────────────────────────────
-
-class _ExchangeModeBar extends StatelessWidget {
-  final int selectedCount;
-  final bool isSubmitting;
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
-
-  const _ExchangeModeBar({
-    required this.selectedCount,
-    required this.isSubmitting,
-    required this.onConfirm,
-    required this.onCancel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      runAlignment: WrapAlignment.center,
-      spacing: 12,
-      runSpacing: 8,
-      children: [
-        _ActionButton(
-          label: 'Cancel',
-          icon: Icons.close,
-          color: const Color(0xFF8A6645),
-          onTap: onCancel,
-        ),
-        _ActionButton(
-          label: selectedCount > 0
-              ? 'Swap $selectedCount tile${selectedCount > 1 ? 's' : ''}'
-              : 'Select tiles',
-          icon: Icons.swap_horiz,
-          color: selectedCount > 0
-              ? const Color(0xFF7A5A3A)
-              : const Color(0xFF9A7B5A),
-          isLoading: isSubmitting,
-          onTap: selectedCount > 0 && !isSubmitting ? onConfirm : null,
         ),
       ],
     );
@@ -262,37 +187,37 @@ class _ActionButton extends StatelessWidget {
           boxShadow: isDisabled
               ? []
               : [
-            BoxShadow(
-              color: color.withValues(alpha: 0.4),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: isLoading
             ? const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white,
-          ),
-        )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
             : Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.merriweather(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: GoogleFonts.merriweather(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
