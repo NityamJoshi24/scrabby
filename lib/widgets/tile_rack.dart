@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:scrabble/models/tile_model.dart';
 import 'package:scrabble/providers/game_provider.dart';
 import 'package:scrabble/widgets/scrabble_tile.dart';
 
-class TileRack extends ConsumerWidget{
+class TileRack extends ConsumerWidget {
   final List<TileModel> tiles;
   final bool isMyTurn;
 
-  const TileRack({
-    super.key,
-    required this.tiles,
-    required this.isMyTurn,
-  });
+  const TileRack({super.key, required this.tiles, required this.isMyTurn});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingPlacement = ref.watch(pendingPlacementProvider);
+    final selectedRackTile = ref.watch(selectedRackTileProvider);
     final selectedForExchange = ref.watch(selectedForExchangeProvider);
     final isExchangeMode = selectedForExchange.isNotEmpty;
     final placedLetters = pendingPlacement.map((c) => c.tile!.letter).toList();
     final visibleTiles = _getRemainingTiles(tiles, placedLetters);
     final slotCount = visibleTiles.length + pendingPlacement.length;
+    final useTapPlacementOnly =
+        kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         const horizontalPadding = 24.0;
         const preferredGap = 6.0;
-        final availableWidth = (constraints.maxWidth - horizontalPadding).clamp(0.0, double.infinity);
+        final availableWidth = (constraints.maxWidth - horizontalPadding).clamp(
+          0.0,
+          double.infinity,
+        );
         final gapsWidth = slotCount * preferredGap;
         final tileSize = slotCount == 0
             ? 44.0
@@ -45,7 +50,7 @@ class TileRack extends ConsumerWidget{
                   ? const Color(0xFFE7C46B)
                   : const Color(0xFFD2AD7D),
               width: isMyTurn ? 2 : 1,
-            )
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -68,22 +73,28 @@ class TileRack extends ConsumerWidget{
                 runSpacing: preferredGap,
                 children: [
                   ...visibleTiles.map((tile) {
-                    final isSelected = selectedForExchange.any((t) => t.letter == tile.letter);
+                    final isSelectedForExchange = selectedForExchange.any(
+                      (t) => t.letter == tile.letter,
+                    );
+                    final isSelectedForPlacement =
+                        selectedRackTile != null &&
+                        identical(selectedRackTile, tile);
 
                     return _buildDraggableTile(
                       context,
                       ref,
                       tile,
-                      isSelected,
+                      isSelectedForExchange || isSelectedForPlacement,
                       isMyTurn,
                       isExchangeMode,
+                      useTapPlacementOnly,
                       tileSize,
                     );
                   }),
 
                   ...List.generate(pendingPlacement.length, (_) {
                     return _GhostSlot(size: tileSize);
-                  })
+                  }),
                 ],
               ),
             ],
@@ -94,48 +105,62 @@ class TileRack extends ConsumerWidget{
   }
 
   Widget _buildDraggableTile(
-      BuildContext context,
-      WidgetRef ref,
-      TileModel tile,
-      bool isSelected,
-      bool isMyTurn,
-      bool isExchangeMode,
-      double tileSize,
-      ) {
-    if(!isMyTurn) {
-      return ScrabbleTile(tile: tile, size: tileSize,);
+    BuildContext context,
+    WidgetRef ref,
+    TileModel tile,
+    bool isSelected,
+    bool isMyTurn,
+    bool isExchangeMode,
+    bool useTapPlacementOnly,
+    double tileSize,
+  ) {
+    if (!isMyTurn) {
+      return ScrabbleTile(tile: tile, size: tileSize);
     }
 
-    return Draggable<TileModel>(
-      data: tile,
-      feedback: Material(
-        color: Colors.transparent,
-        child: ScrabbleTile(tile: tile, size: tileSize + 4,),
-      ),
-      childWhenDragging: _GhostSlot(size: tileSize),
-      child: ScrabbleTile(tile: tile, size: tileSize, isSelected: isSelected,
+    final tileWidget = ScrabbleTile(
+      tile: tile,
+      size: tileSize,
+      isSelected: isSelected,
       onTap: () {
-        if(isExchangeMode || !isMyTurn) {
+        if (isExchangeMode) {
           ref.read(selectedForExchangeProvider.notifier).update((s) {
             final exists = s.any((t) => t.letter == tile.letter);
             return exists
                 ? s.where((t) => t.letter != tile.letter).toList()
                 : [...s, tile];
           });
+        } else {
+          ref.read(selectedRackTileProvider.notifier).update((selected) {
+            return identical(selected, tile) ? null : tile;
+          });
         }
       },
+    );
+
+    if (useTapPlacementOnly) {
+      return tileWidget;
+    }
+
+    return Draggable<TileModel>(
+      data: tile,
+      feedback: Material(
+        color: Colors.transparent,
+        child: ScrabbleTile(tile: tile, size: tileSize + 4),
       ),
+      childWhenDragging: _GhostSlot(size: tileSize),
+      child: tileWidget,
     );
   }
 
   List<TileModel> _getRemainingTiles(
-      List<TileModel> rack,
-      List<String> placedLetters,
-      ) {
+    List<TileModel> rack,
+    List<String> placedLetters,
+  ) {
     final remaining = List<TileModel>.from(rack);
-    for(final letter in placedLetters) {
+    for (final letter in placedLetters) {
       final idx = remaining.indexWhere((t) => t.letter == letter);
-      if(idx != -1) remaining.removeAt(idx);
+      if (idx != -1) remaining.removeAt(idx);
     }
     return remaining;
   }
@@ -157,7 +182,7 @@ class _GhostSlot extends StatelessWidget {
           color: const Color(0xFFD2AD7D),
           width: 1,
           style: BorderStyle.solid,
-        )
+        ),
       ),
     );
   }

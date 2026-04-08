@@ -3,23 +3,36 @@ import 'package:scrabble/models/board_cell_model.dart';
 import 'package:scrabble/models/player_model.dart';
 import 'package:scrabble/providers/auth_provider.dart';
 import 'package:scrabble/services/game_service.dart';
+import 'package:scrabble/services/session_storage.dart';
 
 import '../models/game_model.dart';
 import '../models/tile_model.dart';
 
 final gameServiceProvider = Provider<GameService>((ref) => GameService());
 
+final sessionStorageProvider = Provider<SessionStorage>(
+  (ref) => SessionStorage(),
+);
+
+final savedGameSessionProvider = FutureProvider<SavedGameSession?>((ref) {
+  return ref.read(sessionStorageProvider).readGameSession();
+});
+
 final activeGameIdProvider = StateProvider<String?>((ref) => null);
 
 final gameStreamProvider = StreamProvider<GameModel>((ref) {
   final gameId = ref.watch(activeGameIdProvider);
-  if(gameId == null) return Stream.empty();
+  if (gameId == null) return Stream.empty();
 
   final service = ref.read(gameServiceProvider);
   return service.streamGame(gameId);
 });
 
-final pendingPlacementProvider = StateProvider<List<BoardCellModel>>((ref) => []);
+final pendingPlacementProvider = StateProvider<List<BoardCellModel>>(
+  (ref) => [],
+);
+
+final selectedRackTileProvider = StateProvider<TileModel?>((ref) => null);
 
 final selectedForExchangeProvider = StateProvider<List<TileModel>>((ref) => []);
 
@@ -28,15 +41,15 @@ final isSubmittingProvider = StateProvider<bool>((ref) => false);
 final isMyTurnProvider = Provider<bool>((ref) {
   final user = ref.watch(currentUserProvider);
   final game = ref.watch(gameStreamProvider).valueOrNull;
-  if(user == null || game == null) return false;
+  if (user == null || game == null) return false;
   return game.currentPlayer.uid == user.uid;
 });
 
 final myPlayerProvider = Provider<PlayerModel?>((ref) {
   final user = ref.watch(currentUserProvider);
   final game = ref.watch(gameStreamProvider).valueOrNull;
-  if(user == null || game == null) return null;
-  try{
+  if (user == null || game == null) return null;
+  try {
     return game.players.firstWhere((p) => p.uid == user.uid);
   } catch (_) {
     return null;
@@ -46,8 +59,8 @@ final myPlayerProvider = Provider<PlayerModel?>((ref) {
 final opponentProvider = Provider<PlayerModel?>((ref) {
   final user = ref.watch(currentUserProvider);
   final game = ref.watch(gameStreamProvider).valueOrNull;
-  if(user == null || game == null) return null;
-  try{
+  if (user == null || game == null) return null;
+  try {
     return game.players.firstWhere((p) => p.uid != user.uid);
   } catch (_) {
     return null;

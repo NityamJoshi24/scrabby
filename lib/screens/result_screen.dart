@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/game_model.dart';
 import '../models/player_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/game_provider.dart';
 import 'home_screen.dart';
 
 class ResultScreen extends ConsumerWidget {
@@ -68,11 +69,21 @@ class ResultScreen extends ConsumerWidget {
                       ),
                       SizedBox(height: sectionGap),
                       _PlayAgainButton(
-                        onTap: () => Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
-                          (_) => false,
-                        ),
+                        onTap: () async {
+                          await ref
+                              .read(sessionStorageProvider)
+                              .clearGameSession();
+                          ref.read(activeGameIdProvider.notifier).state = null;
+
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HomeScreen(),
+                            ),
+                            (_) => false,
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                     ],

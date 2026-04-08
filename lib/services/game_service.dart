@@ -125,7 +125,7 @@ class GameService {
           .map((p) => PlayerModel.fromJson(p as Map<String, dynamic>))
           .toList();
 
-      final turnIndex = data[AppConstants.fieldPlayers] as int;
+      final turnIndex = data[AppConstants.fieldCurrentTurn] as int;
       final player = players[turnIndex];
 
       final updatedRack = List<TileModel>.from(player.rack);

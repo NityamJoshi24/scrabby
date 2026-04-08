@@ -2,7 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrabble/providers/auth_provider.dart';
+import 'package:scrabble/providers/game_provider.dart';
 import 'package:scrabble/screens/home_screen.dart';
+import 'package:scrabble/screens/lobby_screen.dart';
 import 'package:scrabble/services/dictionary_service.dart';
 import 'firebase_options.dart';
 
@@ -41,12 +43,32 @@ class ScrabbleApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       home: auth.when(
-          data: (_) => const HomeScreen(),
-          error: (e, _) => Scaffold(
-        body: Center(child: Text('Auth Error: $e'),),
-      ), loading: () => Scaffold(
-        body: Center(child: CircularProgressIndicator(),),
-      ))
+        data: (_) => const _SessionGate(),
+        error: (e, _) => Scaffold(body: Center(child: Text('Auth Error: $e'))),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+    );
+  }
+}
+
+class _SessionGate extends ConsumerWidget {
+  const _SessionGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final savedSession = ref.watch(savedGameSessionProvider);
+
+    return savedSession.when(
+      data: (session) {
+        if (session == null) return const HomeScreen();
+
+        ref.read(activeGameIdProvider.notifier).state = session.gameId;
+        return LobbyScreen(gameId: session.gameId, isHost: session.isHost);
+      },
+      error: (error, stackTrace) => const HomeScreen(),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
   }
 }
