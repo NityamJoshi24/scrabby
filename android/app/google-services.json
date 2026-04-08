@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "516233644956",
+    "firebase_url": "https://scrabble-online-7a022-default-rtdb.firebaseio.com",
+    "project_id": "scrabble-online-7a022",
+    "storage_bucket": "scrabble-online-7a022.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516233644956:android:3ec2dc2aa6fe393b721659",
+        "android_client_info": {
+          "package_name": "com.example.scrabble"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkAKpHEeTkkhFau0som9ag176_hXpHOkk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
